@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do List App</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Dark Theme (Default) */
+            --bg-page: #fceea7;
+            --bg-primary: #3E2723;
+            --bg-secondary: #4E342E;
+            --bg-secondary-translucent: rgba(78, 52, 46, 0.7);
+            --btn-primary: #795548;
+            --btn-primary-hover: #5D4037;
+            --btn-secondary: #8D6E63;
+            --btn-secondary-hover: #795548;
+            --text-primary: #f5e9e2;
+            --text-secondary: #d4c8c2;
+            --text-placeholder: #a89f9c;
+            --accent: #8D6E63;
+            --border-color: #6D4C41;
+            --completed-text: #a89f9c;
+            --dot-pattern-color: rgba(141, 110, 99, 0.15);
+            /* Priority Colors */
+            --priority-high: #ef9a9a; /* light red */
+            --priority-medium: #ffe082; /* light yellow */
+            --priority-low: #a5d6a7; /* light green */
+        }
+
+        .light-theme {
+            /* Light Theme */
+            --bg-page: #fffbeb;
+            --bg-primary: #fdfaf3;
+            --bg-secondary: #fef8e7;
+            --bg-secondary-translucent: rgba(254, 248, 231, 0.7);
+            --btn-primary: #8D6E63;
+            --btn-primary-hover: #795548;
+            --btn-secondary: #a1887f;
+            --btn-secondary-hover: #8D6E63;
+            --text-primary: #5D4037;
+            --text-secondary: #795548;
+            --text-placeholder: #a1887f;
+            --accent: #a1887f;
+            --border-color: #d7ccc8;
+            --completed-text: #bcaaa4;
+            --dot-pattern-color: rgba(215, 204, 200, 0.4);
+            /* Priority Colors */
+            --priority-high: #e57373; /* red */
+            --priority-medium: #ffd54f; /* yellow */
+            --priority-low: #81c784; /* green */
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: var(--bg-page);
+            background-image: radial-gradient(var(--dot-pattern-color) 1px, transparent 1px);
+            background-size: 16px 16px;
+            color: var(--text-primary);
+            transition: background-color 0.3s ease;
+        }
+        h1 {
+            font-family: 'Caveat', cursive;
+        }
+        .completed span {
+            text-decoration: line-through;
+            color: var(--completed-text);
+        }
+        .task-item {
+            transition: all 0.2s ease-in-out;
+        }
+        .custom-checkbox {
+            appearance: none;
+            background-color: transparent;
+            width: 1.25rem;
+            height: 1.25rem;
+            border: 2px solid var(--accent);
+            border-radius: 50%;
+            cursor: pointer;
+            display: inline-block;
+            position: relative;
+            transition: background-color 0.2s, border-color 0.2s;
+        }
+        .custom-checkbox:checked {
+            background-color: var(--btn-primary);
+            border-color: var(--btn-primary);
+        }
+        .custom-checkbox:checked::after {
+            content: '';
+            position: absolute;
+            left: 6px;
+            top: 2px;
+            width: 5px;
+            height: 10px;
+            border: solid white;
+            border-width: 0 3px 3px 0;
+            transform: rotate(45deg);
+        }
+
+        /* Component Styles using CSS Variables */
+        .main-container { background-color: var(--bg-primary); }
+        .header-title { color: var(--text-primary); }
+        .header-subtitle { color: var(--text-secondary); }
+        .header-icon { color: var(--accent); }
+        .theme-toggle-btn { color: var(--text-placeholder); }
+        .theme-toggle-btn:hover { color: var(--text-primary); }
+
+        .form-input, .form-select {
+            background-color: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+        .form-input::placeholder { color: var(--text-placeholder); }
+        .form-input:focus, .form-select:focus {
+            --tw-ring-color: var(--accent);
+        }
+        .form-label { color: var(--text-secondary); }
+
+        .btn-primary { 
+            background-color: var(--btn-primary);
+            color: white;
+        }
+        .btn-primary:hover { background-color: var(--btn-primary-hover); }
+        
+        .btn-secondary {
+            background-color: var(--btn-secondary);
+            color: white;
+        }
+        .btn-secondary:hover { background-color: var(--btn-secondary-hover); }
+        
+        .task-list-item {
+            background-color: var(--bg-secondary-translucent);
+            color: var(--text-primary);
+        }
+        .task-date-info {
+            color: var(--text-placeholder);
+            border-top: 1px solid var(--border-color);
+        }
+        .repetition-icon { color: var(--text-placeholder); }
+        .edit-btn { color: var(--text-placeholder); }
+        .edit-btn:hover { color: var(--text-primary); }
+        .delete-btn { color: var(--text-placeholder); }
+        .delete-btn:hover { color: #ef4444; }
+        .task-count-text { color: var(--text-placeholder); }
+        .empty-list-text { color: var(--text-placeholder); }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen p-4">
+
+    <div class="main-container w-full max-w-2xl mx-auto shadow-2xl rounded-2xl p-6 flex flex-col min-h-[60vh]">
+        <!-- Header -->
+        <header class="text-center mb-6 relative">
+             <div class="header-icon absolute -top-4 -left-3 opacity-50">
+                <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2c-.28 0-.53.11-.71.29L3.58 10H2v2h2v8h16v-8h2v-2h-1.58L12.71 2.29A1 1 0 0 0 12 2zm-1 2.83L12 6l1 1.17V12h-2V4.83z"/></svg>
+            </div>
+            <button id="theme-toggle" class="theme-toggle-btn absolute top-0 right-0 p-2 rounded-full transition-colors duration-300">
+                <svg id="theme-icon-sun" class="w-6 h-6 hidden" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 2zM5.636 5.636a.75.75 0 011.06 0l1.061 1.06a.75.75 0 01-1.06 1.06l-1.06-1.06a.75.75 0 010-1.06zm9.192 0a.75.75 0 010 1.06l-1.06 1.06a.75.75 0 01-1.06-1.06l1.06-1.06a.75.75 0 011.06 0zM10 15.5a5.5 5.5 0 100-11 5.5 5.5 0 000 11zM2 10a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5A.75.75 0 012 10zm14.5 0a.75.75 0 01.75-.75h1.5a.75.75 0 010 1.5h-1.5a.75.75 0 01-.75-.75zm-9.192 4.364a.75.75 0 010-1.06l1.06-1.06a.75.75 0 011.06 1.06l-1.06 1.06a.75.75 0 01-1.06 0zm-1.06-1.06a.75.75 0 011.06 0l1.06 1.06a.75.75 0 01-1.06 1.06l-1.06-1.06a.75.75 0 010-1.06zM10 18a.75.75 0 01.75-.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 0110 18z" clip-rule="evenodd" /></svg>
+                <svg id="theme-icon-moon" class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+            </button>
+            <h1 class="header-title text-5xl font-bold">My To-Do List</h1>
+            <p class="header-subtitle mt-1">Stay organized and productive.</p>
+        </header>
+
+        <!-- Task Input Form -->
+        <form id="task-form" class="space-y-4 mb-4">
+            <div>
+                 <label for="task-input" class="sr-only">New Task</label>
+                 <input 
+                    type="text" 
+                    id="task-input" 
+                    placeholder="What do you need to do?" 
+                    class="form-input w-full placeholder-opacity-100 rounded-xl p-3 focus:ring-2 focus:outline-none transition"
+                    required
+                >
+            </div>
+            <div id="date-time-container" class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div id="start-date-wrapper">
+                    <label for="start-date" class="form-label block text-sm font-medium mb-1">Start Date</label>
+                    <input type="date" id="start-date" class="form-input w-full rounded-xl p-2 text-sm focus:ring-2 focus:outline-none transition">
+                </div>
+                <div id="start-time-wrapper">
+                    <label for="start-time" class="form-label block text-sm font-medium mb-1">Start Time</label>
+                    <input type="time" id="start-time" class="form-input w-full rounded-xl p-2 text-sm focus:ring-2 focus:outline-none transition">
+                </div>
+                <div id="end-date-wrapper">
+                    <label for="end-date" class="form-label block text-sm font-medium mb-1">End Date</label>
+                    <input type="date" id="end-date" class="form-input w-full rounded-xl p-2 text-sm focus:ring-2 focus:outline-none transition">
+                </div>
+                <div id="end-time-wrapper">
+                    <label for="end-time" class="form-label block text-sm font-medium mb-1">End Time</label>
+                    <input type="time" id="end-time" class="form-input w-full rounded-xl p-2 text-sm focus:ring-2 focus:outline-none transition">
+                </div>
+            </div>
+             <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label for="task-repetition" class="form-label block text-sm font-medium mb-1">Repetition</label>
+                    <select id="task-repetition" class="form-select w-full rounded-xl p-2 text-sm focus:ring-2 focus:outline-none transition">
+                        <option value="only-once">Only Once</option>
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="task-priority" class="form-label block text-sm font-medium mb-1">Priority</label>
+                    <select id="task-priority" class="form-select w-full rounded-xl p-2 text-sm focus:ring-2 focus:outline-none transition">
+                        <option value="low">Low</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="high">High</option>
+                    </select>
+                </div>
+            </div>
+            <div id="form-buttons" class="flex items-center gap-3">
+                <button 
+                    type="submit"
+                    id="submit-btn"
+                    class="btn-primary w-full font-semibold py-3 px-5 rounded-xl shadow-md transition transform hover:scale-105"
+                >
+                    Add Task
+                </button>
+                <button 
+                    type="button"
+                    id="cancel-edit-btn"
+                    class="btn-secondary w-full font-semibold py-3 px-5 rounded-xl shadow-md transition transform hover:scale-105 hidden"
+                >
+                    Cancel
+                </button>
+            </div>
+        </form>
+
+        <!-- Filters and Actions -->
+        <div class="flex justify-between items-center mb-4 text-sm">
+             <div class="flex items-center gap-4">
+                <p class="task-count-text"><span id="task-count">0</span> tasks</p>
+                <div class="flex items-center gap-2">
+                    <label for="sort-order" class="task-count-text">Sort by:</label>
+                    <select id="sort-order" class="form-select rounded-lg p-1 text-xs focus:ring-2 focus:outline-none transition">
+                        <option value="recent">Most Recent</option>
+                        <option value="priority">Priority</option>
+                    </select>
+                </div>
+             </div>
+             <button id="clear-all-btn" class="text-red-400 hover:text-red-500 font-medium hidden">Clear Completed</button>
+        </div>
+
+        <!-- Task List -->
+        <ul id="task-list" class="space-y-3 flex-grow overflow-y-auto pr-2">
+            <!-- Tasks will be dynamically inserted here -->
+        </ul>
+    </div>
+
+    <!-- Main App Logic -->
+    <script type="module">
+        // --- DOM Elements ---
+        const taskForm = document.getElementById('task-form');
+        const taskInput = document.getElementById('task-input');
+        const startDateInput = document.getElementById('start-date');
+        const startTimeInput = document.getElementById('start-time');
+        const endDateInput = document.getElementById('end-date');
+        const endTimeInput = document.getElementById('end-time');
+        const repetitionInput = document.getElementById('task-repetition');
+        const priorityInput = document.getElementById('task-priority');
+        const submitBtn = document.getElementById('submit-btn');
+        const cancelEditBtn = document.getElementById('cancel-edit-btn');
+        const taskList = document.getElementById('task-list');
+        const taskCountElement = document.getElementById('task-count');
+        const clearAllBtn = document.getElementById('clear-all-btn');
+        const startDateWrapper = document.getElementById('start-date-wrapper');
+        const startTimeWrapper = document.getElementById('start-time-wrapper');
+        const endDateWrapper = document.getElementById('end-date-wrapper');
+        const endTimeWrapper = document.getElementById('end-time-wrapper');
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const themeIconSun = document.getElementById('theme-icon-sun');
+        const themeIconMoon = document.getElementById('theme-icon-moon');
+        const body = document.body;
+        const sortOrderSelect = document.getElementById('sort-order');
+
+        // --- App State ---
+        let currentlyEditingId = null;
+        let localTasksCache = [];
+        let currentSortOrder = 'recent';
+        
+        // --- Local Storage Logic ---
+        const loadTasksFromLocalStorage = () => {
+            const tasksJSON = localStorage.getItem('tasks');
+            return tasksJSON ? JSON.parse(tasksJSON) : [];
+        };
+
+        const saveTasksToLocalStorage = (tasks) => {
+            localStorage.setItem('tasks', JSON.stringify(tasks));
+        };
+
+        // --- App Initialization ---
+        function initializeApp() {
+            localTasksCache = loadTasksFromLocalStorage();
+            renderTasks(localTasksCache);
+        }
+
+        // --- UI & Theme Logic ---
+        function updateDateTimeVisibility() {
+            const selection = repetitionInput.value;
+            const dateTimeContainer = document.getElementById('date-time-container');
+            const showDates = selection === 'only-once';
+            const showTimes = selection === 'only-once' || selection === 'daily';
+            startDateWrapper.style.display = showDates ? 'block' : 'none';
+            endDateWrapper.style.display = showDates ? 'block' : 'none';
+            startTimeWrapper.style.display = showTimes ? 'block' : 'none';
+            endTimeWrapper.style.display = showTimes ? 'block' : 'none';
+            if (selection === 'daily') {
+                dateTimeContainer.className = 'flex justify-around items-center gap-4';
+            } else {
+                dateTimeContainer.className = 'grid grid-cols-2 sm:grid-cols-4 gap-4';
+            }
+        }
+
+        const applyTheme = (theme) => {
+            if (theme === 'light') {
+                body.classList.add('light-theme');
+                themeIconSun.classList.remove('hidden');
+                themeIconMoon.classList.add('hidden');
+            } else {
+                body.classList.remove('light-theme');
+                themeIconSun.classList.add('hidden');
+                themeIconMoon.classList.remove('hidden');
+            }
+        };
+
+        themeToggleBtn.addEventListener('click', () => {
+            const isLight = body.classList.contains('light-theme');
+            const newTheme = isLight ? 'dark' : 'light';
+            localStorage.setItem('theme', newTheme);
+            applyTheme(newTheme);
+        });
+        
+        // --- Render Tasks (with Sorting) ---
+        function renderTasks(tasks) {
+            const priorityMap = { high: 3, medium: 2, low: 1 };
+            const sortedTasks = [...tasks].sort((a, b) => {
+                if (currentSortOrder === 'priority') {
+                    const priorityA = priorityMap[a.priority] || 0;
+                    const priorityB = priorityMap[b.priority] || 0;
+                    if (priorityB !== priorityA) {
+                        return priorityB - priorityA;
+                    }
+                }
+                const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                return dateB - dateA;
+            });
+
+            taskList.innerHTML = '';
+            let uncompletedCount = 0;
+            let completedCount = 0;
+
+            if (sortedTasks.length === 0) {
+                 taskList.innerHTML = `<p class="empty-list-text text-center">No tasks yet. Add one above!</p>`;
+            }
+
+            sortedTasks.forEach(task => {
+                if (!task.completed) uncompletedCount++;
+                else completedCount++;
+
+                const li = document.createElement('li');
+                li.className = `task-list-item task-item flex flex-col p-3 rounded-xl shadow-sm ${task.completed ? 'completed' : ''}`;
+                li.dataset.id = task.id;
+
+                let priorityIndicator = '';
+                if (task.priority) {
+                    priorityIndicator = `<span class="w-3 h-3 rounded-full mr-3 flex-shrink-0" style="background-color: var(--priority-${task.priority});" title="Priority: ${task.priority}"></span>`;
+                }
+                
+                const formatDate = (dateString, repetition) => {
+                    if (!dateString) return 'Not set';
+                    const d = new Date(dateString);
+                    if (repetition === 'daily' && d.getUTCFullYear() === 1970) {
+                         return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', timeZone: 'UTC' });
+                    }
+                    return d.toLocaleString([], { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                }
+
+                let dateInfo = '';
+                if (task.startDateTime || task.endDateTime) {
+                    dateInfo = `
+                        <div class="task-date-info text-xs mt-2 pt-2">
+                            <strong>Start:</strong> ${formatDate(task.startDateTime, task.repetition)}<br>
+                            <strong>End:</strong> ${formatDate(task.endDateTime, task.repetition)}
+                        </div>
+                    `;
+                }
+                
+                let repetitionInfo = '';
+                if (task.repetition && task.repetition !== 'only-once') {
+                    repetitionInfo = `
+                        <span class="repetition-icon ml-auto" title="Repeats ${task.repetition}">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0-4.4-3.6-8-8-8s-8 3.6-8 8 3.6 8 8 8h1"/><path d="m18 14 4 4-4 4"/><path d="M4 14H3c-1.7 0-3-1.3-3-3s1.3-3 3-3h1"/></svg>
+                        </span>
+                    `;
+                }
+
+                li.innerHTML = `
+                    <div class="flex items-center w-full">
+                        ${priorityIndicator}
+                        <input type="checkbox" class="custom-checkbox flex-shrink-0" ${task.completed ? 'checked' : ''}>
+                        <span class="flex-grow px-4 cursor-pointer">${task.text}</span>
+                        ${repetitionInfo}
+                        <button class="edit-btn p-1 transition-colors">
+                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21.174 6.812a1 1 0 0 0-1.414 0l-1.414 1.414L12 14.586l-1.06-1.06a1 1 0 0 0-1.414 1.414l1.768 1.768a1 1 0 0 0 1.414 0l6.464-6.464a1 1 0 0 0 0-1.414l-.354-.354Z"/><path d="m14 7 3 3L6 21H3v-3L14 7Z"/></svg>
+                        </button>
+                        <button class="delete-btn p-1 ml-1 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>
+                        </button>
+                    </div>
+                    ${dateInfo}
+                `;
+                taskList.appendChild(li);
+            });
+            taskCountElement.textContent = uncompletedCount;
+            clearAllBtn.classList.toggle('hidden', completedCount === 0);
+        }
+
+        // --- Event Handlers ---
+        
+        taskForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const taskText = taskInput.value.trim();
+            if (!taskText) return;
+
+            const combineDateAndTime = (date, time) => {
+                const isDateVisible = startDateWrapper.style.display !== 'none';
+                if (isDateVisible && !date) return null;
+                if (!isDateVisible && !time) return null;
+                if (!isDateVisible && time) return new Date(`1970-01-01T${time}Z`).toISOString();
+                const combined = new Date(`${date}T${time || '00:00:00'}`);
+                return combined.toISOString();
+            };
+
+            const taskData = {
+                text: taskText,
+                startDateTime: combineDateAndTime(startDateInput.value, startTimeInput.value),
+                endDateTime: combineDateAndTime(endDateInput.value, endTimeInput.value),
+                repetition: repetitionInput.value,
+                priority: priorityInput.value,
+            };
+
+            if (currentlyEditingId) {
+                const taskIndex = localTasksCache.findIndex(t => t.id === currentlyEditingId);
+                if (taskIndex > -1) {
+                    const originalTask = localTasksCache[taskIndex];
+                    localTasksCache[taskIndex] = { ...originalTask, ...taskData };
+                }
+            } else {
+                taskData.id = crypto.randomUUID(); // Generate a unique ID
+                taskData.completed = false;
+                taskData.createdAt = new Date().toISOString();
+                localTasksCache.push(taskData);
+            }
+            
+            saveTasksToLocalStorage(localTasksCache);
+            renderTasks(localTasksCache);
+            resetForm();
+        });
+
+        taskList.addEventListener('click', (e) => {
+            const target = e.target;
+            const li = target.closest('li');
+            if (!li) return;
+            
+            const docId = li.dataset.id;
+            const taskIndex = localTasksCache.findIndex(t => t.id === docId);
+            if (taskIndex < 0) return;
+
+            const task = localTasksCache[taskIndex];
+
+            if (target.type === 'checkbox' || target.tagName.toLowerCase() === 'span') {
+                const isCompleted = li.querySelector('input[type="checkbox"]').checked;
+                const newCompletedStatus = target.tagName.toLowerCase() === 'span' ? !isCompleted : isCompleted;
+                
+                const shouldReschedule = newCompletedStatus && task?.repetition !== 'only-once' && task?.startDateTime && new Date(task.startDateTime).getUTCFullYear() > 1970;
+
+                if (shouldReschedule) {
+                    if (target.type === 'checkbox') e.preventDefault();
+                    
+                    const newStart = new Date(task.startDateTime);
+                    let newEnd = task.endDateTime ? new Date(task.endDateTime) : null;
+
+                    switch (task.repetition) {
+                        case 'daily': newStart.setDate(newStart.getDate() + 1); if (newEnd) newEnd.setDate(newEnd.getDate() + 1); break;
+                        case 'weekly': newStart.setDate(newStart.getDate() + 7); if (newEnd) newEnd.setDate(newEnd.getDate() + 7); break;
+                        case 'monthly': newStart.setMonth(newStart.getMonth() + 1); if (newEnd) newEnd.setMonth(newEnd.getMonth() + 1); break;
+                    }
+                    
+                    localTasksCache[taskIndex].startDateTime = newStart.toISOString();
+                    localTasksCache[taskIndex].endDateTime = newEnd?.toISOString();
+                } else {
+                    localTasksCache[taskIndex].completed = newCompletedStatus;
+                }
+                saveTasksToLocalStorage(localTasksCache);
+                renderTasks(localTasksCache);
+            }
+
+            if (target.closest('.delete-btn')) {
+                localTasksCache.splice(taskIndex, 1);
+                saveTasksToLocalStorage(localTasksCache);
+                renderTasks(localTasksCache);
+            }
+            
+            if (target.closest('.edit-btn')) {
+                const taskToEdit = localTasksCache.find(t => t.id === docId);
+                if (taskToEdit) {
+                    taskInput.value = taskToEdit.text;
+                    
+                    const splitTimestamp = (isoString) => {
+                        if (!isoString) return { date: '', time: '' };
+                        const d = new Date(isoString);
+                        const date = d.toISOString().split('T')[0];
+                        const time = d.toTimeString().split(' ')[0].substring(0, 5);
+                        return { date, time };
+                    };
+
+                    const start = splitTimestamp(taskToEdit.startDateTime);
+                    startDateInput.value = start.date;
+                    startTimeInput.value = start.time;
+
+                    const end = splitTimestamp(taskToEdit.endDateTime);
+                    endDateInput.value = end.date;
+                    endTimeInput.value = end.time;
+
+                    repetitionInput.value = taskToEdit.repetition || 'only-once';
+                    priorityInput.value = taskToEdit.priority || 'medium';
+                    updateDateTimeVisibility();
+
+                    currentlyEditingId = docId;
+                    submitBtn.textContent = 'Update Task';
+                    cancelEditBtn.classList.remove('hidden');
+                    taskInput.focus();
+                }
+            }
+        });
+
+        cancelEditBtn.addEventListener('click', resetForm);
+
+        function resetForm() {
+            taskForm.reset();
+            currentlyEditingId = null;
+            submitBtn.textContent = 'Add Task';
+            cancelEditBtn.classList.add('hidden');
+            repetitionInput.value = 'only-once';
+            priorityInput.value = 'medium';
+            updateDateTimeVisibility();
+        }
+
+        clearAllBtn.addEventListener('click', () => {
+             localTasksCache = localTasksCache.filter(t => !t.completed);
+             saveTasksToLocalStorage(localTasksCache);
+             renderTasks(localTasksCache);
+        });
+
+        repetitionInput.addEventListener('change', updateDateTimeVisibility);
+        
+        sortOrderSelect.addEventListener('change', (e) => {
+            currentSortOrder = e.target.value;
+            renderTasks(localTasksCache);
+        });
+
+        // --- Final Setup ---
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        applyTheme(savedTheme);
+        initializeApp();
+        updateDateTimeVisibility();
+
+    </script>
+</body>
+</html>
+
